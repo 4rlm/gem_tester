@@ -63,9 +63,10 @@ gem 'tzinfo-data', platforms: [:mingw, :mswin, :x64_mingw, :jruby]
 
 
 gem 'pry'
+gem 'faker'
 
 
 # gem 'crm_formatter', '~> 1.0.2.pre.rc.1'
-gem "crm_formatter", path: "../crm_formatter"
+# gem "crm_formatter", path: "../crm_formatter"
 
 # gem "crm_formatter", path: "/Users/Adam/Desktop/gems/crm_formatter"

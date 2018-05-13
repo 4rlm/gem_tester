@@ -15,6 +15,11 @@ class Article < ApplicationRecord
     binding.pry
   end
 
+  # def download_list
+  #   CSVManager::Export.new.download(self, Product.all, "products-#{Date.today}.csv")
+  # end
+
+
 
   # def full_address
   #   self.full_address = [street, city, state, zip].compact.join(', ')
