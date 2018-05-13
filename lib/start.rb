@@ -2,8 +2,19 @@ class Start
 
 
   ############## PHONE BELOW ##############
-  # address = CRMFormatter::Address.new
-  
+  phone = CRMFormatter::Phone.new
+
+  fk_phone = Faker::PhoneNumber
+  fk_adr = Faker::Address
+  phones = 2.times.map { fk_phone.phone_number }
+  phones += 2.times.map { fk_phone.cell_phone }
+  phones += 2.times.map { fk_adr.street_address }
+  phones += 2.times.map { fk_adr.zip_code }
+  phones += 2.times.map { fk_adr.latitude }
+  phones.shuffle!
+
+  formatted_phone_hashes = phones.map { |ph| phone.validate_phone(ph) }
+  binding.pry
 
   ############## ADDRESS BELOW ##############
   # address = CRMFormatter::Address.new
