@@ -3,7 +3,8 @@ class StartCrm
   # #Call: StartCrm.run_webs
   def self.run_webs
     web = CRMFormatter::Web.new
-    hsh = web.format_url('http://www.bobilya.com/adam_testing')
+    # hsh = web.format_url('http://www.bobilya.com/adam_testing')
+    hsh = web.check_pos_neg('target', 'hash')
     binding.pry
 
   end
