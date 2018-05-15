@@ -20,6 +20,12 @@
 # Ignore uploaded files in development
 /storage/*
 
+.DS_Store
+.idea/
+.txt
+.csv
+!extensions.csv
+
 /node_modules
 /yarn-error.log
 

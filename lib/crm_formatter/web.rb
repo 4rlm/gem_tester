@@ -1,7 +1,10 @@
+require 'csv'
+
 module CRMFormatter
   class Web
 
     def initialize(args={})
+      @empty_oa = args.empty?
       @pos_urls = args.fetch(:pos_urls, [])
       @neg_urls = args.fetch(:neg_urls, [])
       @pos_links = args.fetch(:pos_links, [])
@@ -14,111 +17,178 @@ module CRMFormatter
       @max_length = args.fetch(:max_length, 100)
     end
 
-    def get_banned_syms
-      syms = ["!", "$", "%", "'", "(", ")", "*", "+", ",", "<", ">", "@", "[", "]", "^", "{", "}", "~"]
+    def banned_symbols
+      banned_symbols = ["!", "$", "%", "'", "(", ")", "*", "+", ",", "<", ">", "@", "[", "]", "^", "{", "}", "~"]
     end
-
-    ##Call: StartCrm.run_webs
-    def compare_criteria(hash, target, pn_key, include_or_equal)
-      if pn_key.present?
-        pn_list = instance_variable_get("@#{pn_key}")
-        pn_list += get_banned_syms if %w(neg_urls neg_links neg_hrefs).include?(pn_key)
-
-        if pn_list.present?
-          if target.is_a?(::String)
-            tars = target.split(', ')
-          else
-            tars = target
-          end
-
-          pn_matches = tars.map do |tar|
-            if pn_list.present?
-              if include_or_equal == 'include'
-                pn_list.select { |el| el if target.include?(el) }.join(', ')
-              elsif include_or_equal == 'equal'
-                pn_list.select { |el| el if target == el }.join(', ')
-              end
-            end
-          end
-
-          pn_match = pn_matches&.uniq&.sort&.join(', ')
-          if pn_match.present?
-            if pn_key.include?('neg')
-              hash[:neg] << "#{pn_key}: #{pn_match}"
-            else
-              hash[:pos] << "#{pn_key}: #{pn_match}"
-            end
-          end
-        end
-
-        hash
-      end
-    end
-
 
     ##Call: StartCrm.run_webs
     def format_url(url)
-      prepared_result = prepare_for_uri(url)
-      url_hash = prepared_result[:url_hash]
-      url_hash = format_with_uri(url_hash, prepared_result[:url])
+      prep_result = prep_for_uri(url)
+      url_hash = prep_result[:url_hash]
+      url = prep_result[:url]
+      url = nil if has_errors(url_hash)
+
+      if url.present?
+        uri_result = run_uri(url_hash, url)
+        url_hash = uri_result[:url_hash]
+        url = uri_result[:url]
+        (url = nil if has_errors(url_hash)) if url.present?
+      end
+
+      url_hash[:formatted_url] = url
+      url_hash = check_reformatted_status(url_hash) if url.present?
       url_hash
     end
 
 
+    def check_reformatted_status(url_hash)
+      formatted = url_hash[:formatted_url]
+      if formatted.present?
+        url_hash[:is_reformatted] = url_hash[:url_path] != formatted
+      end
+      url_hash
+    end
+
+
+    def has_errors(url_hash)
+      errors = url_hash[:neg].map { |neg| neg.include?('error') }
+      errors.any?
+    end
+
+
     ##Call: StartCrm.run_webs
-    def prepare_for_uri(url)
-      url_hash = {url_path: url, formatted_url: nil, url_diff: false, neg: [], pos: [] }
+    def prep_for_uri(url)
+      url_hash = { is_reformatted: false, url_path: url, formatted_url: nil, neg: [], pos: [] }
       begin
         url = url&.split('|')&.first
         url = url&.split('\\')&.first
         url&.gsub!(/\P{ASCII}/, '')
         url = url&.downcase&.strip
 
-        if url.length < @min_length
-          url_hash[:neg] << "error: url_path < #{@min_length}"
+        2.times { remove_ww3(url) } if url.present?
+        url = remove_slashes(url) if url.present?
+        url&.strip!
+
+        if url.present?
+          url = nil if url.include?(' ')
+          url = url[0..-2] if url.present? && url[-1] == '/'
         end
 
-        2.times { remove_ww3(url) }
-        url = remove_slashes(url)
-        url&.strip!
-        url = nil if url&.include?(' ')
-        url = url[0..-2] if url[-1] == '/'
+        url = nil if url.present? && banned_symbols.any? {|symb| url&.include?(symb) }
 
-        url_hash = compare_criteria(url_hash, url, 'neg_urls', 'include') if url.present?
-        url_hash = compare_criteria(url_hash, url, 'pos_urls', 'include') if url.present?
+        if url.present?
+          url_hash = compare_criteria(url_hash, url, 'pos_urls', 'include') if !@empty_oa
+          url_hash = compare_criteria(url_hash, url, 'neg_urls', 'include') if !@empty_oa
+        else
+          url_hash[:neg] << "error: syntax"
+          url_hash[:formatted_url] = url
+        end
+
       rescue Exception => e
         url_hash[:neg] << "error: #{e}"
-        binding.pry
+        url = nil
+        url_hash
       end
-      prepared_result = { url_hash: url_hash, url: url }
+
+      prep_result = { url_hash: url_hash, url: url }
     end
 
 
     ##Call: StartCrm.run_webs
-    def format_with_uri(url_hash, url)
+    def run_uri(url_hash, url)
       begin
         uri = URI(url)
         host_parts = uri.host&.split(".")
-        url_hash = compare_criteria(url_hash, host_parts, 'pos_exts', 'equal')
-        url_hash = compare_criteria(url_hash, host_parts, 'neg_exts', 'equal')
+
+        url_hash = compare_criteria(url_hash, host_parts, 'pos_exts', 'equal') if !@empty_oa
+        url_hash = compare_criteria(url_hash, host_parts, 'neg_exts', 'equal') if !@empty_oa
 
         host = uri.host
         scheme = uri.scheme
         url = "#{scheme}://#{host}" if host.present? && scheme.present?
         url = "http://#{url}" if url[0..3] != "http"
         url = url.gsub("//", "//www.") if !url.include?("www.")
+        samp_url = convert_to_scheme_host(url)
 
-        url_hash[:formatted_url] = convert_to_scheme_host(url) if url.present?
-        url_hash[:url_diff] = url_hash[:formatted_url] != url_hash[:url_path]
+        url = convert_to_scheme_host(url) if url.present?
+        url_extens_result = check_url_extens(url_hash, url)
+        url_hash = url_extens_result[:url_hash]
+        url = url_extens_result[:url]
+
       rescue Exception => e
-        url_hash[:error] = e
-        binding.pry
+        url_hash[:neg] << "error: #{e}"
+        url = nil
         url_hash
       end
 
-      url_hash
+      uri_result = { url_hash: url_hash, url: url }
     end
 
+
+    #Source: http://www.iana.org/domains/root/db
+    #Text: http://data.iana.org/TLD/tlds-alpha-by-domain.txt
+    def check_url_extens(url_hash, url)
+      if url.present?
+        url_extens = URI(url).host&.split(".")[2..-1]
+        if url_extens.count > 1
+          file_path = "./lib/crm_formatter/extensions.csv"
+          extens_list = CSV.read(file_path).flatten
+          valid_url_extens = extens_list & url_extens
+
+          if valid_url_extens.count != 1
+            extens_str = valid_url_extens.map { |ext| ".#{ext}" }.join(', ')
+            url_hash[:neg] << "error: exts.count > 1 [#{extens_str}]"
+            url = nil
+          end
+        end
+      end
+
+      url_hash[:formatted_url] = url
+      url_extens_result = {url_hash: url_hash, url: url}
+    end
+
+
+    ## This process, compare_criteria only runs if client OA args were passed at initialization.
+    ## Results listed in url_hash[:neg]/[:pos], and don't impact or hinder final formatted url.
+    ## Simply adds more details about user's preferences and criteria for the url are.
+
+    def compare_criteria(hash, target, list_name, include_or_equal)
+      unless @empty_oa
+        if list_name.present?
+          criteria_list = instance_variable_get("@#{list_name}")
+
+          if criteria_list.present?
+            if target.is_a?(::String)
+              tars = target.split(', ')
+            else
+              tars = target
+            end
+
+            pn_matches = tars.map do |tar|
+              if criteria_list.present?
+                if include_or_equal == 'include'
+                  criteria_list.select { |el| el if tar.include?(el) }.join(', ')
+                elsif include_or_equal == 'equal'
+                  criteria_list.select { |el| el if tar == el }.join(', ')
+                end
+              end
+            end
+
+            pn_match = pn_matches&.uniq&.sort&.join(', ')
+            if pn_match.present?
+              if list_name.include?('neg')
+                hash[:neg] << "#{list_name}: #{pn_match}"
+              else
+                hash[:pos] << "#{list_name}: #{pn_match}"
+              end
+            end
+          end
+
+        end
+      end
+      
+      hash
+    end
 
     ###### Supporting Methods Below #######
 
@@ -225,6 +295,14 @@ module CRMFormatter
       end
       return url
     end
+
+    ##Call: StartCrm.run_webs
+    # def get_ext_list
+    #   # Source: http://www.iana.org/domains/root/db
+    #   # .txt list: http://data.iana.org/TLD/tlds-alpha-by-domain.txt
+    #   file_path = "./lib/crm_formatter/extensions.csv"
+    #   extensions = CSV.read(file_path)
+    # end
 
 
   end

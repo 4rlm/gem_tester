@@ -13,6 +13,7 @@ class StartCrm
   def self.run_webs
     oa_args = get_args
     web = CRMFormatter::Web.new(oa_args)
+    # web = CRMFormatter::Web.new
     urls = get_urls
 
     formatted_url_hashes = urls.map do |url|
@@ -25,7 +26,7 @@ class StartCrm
 
 
   def self.get_args
-    neg_urls = %w(approv avis budget business collis eat enterprise facebook financ food google gourmet hertz hotel hyatt insur invest loan lube mobility motel motorola parts quick rent repair restaur rv ryder service softwar travel twitter webhost yellowpages yelp youtube)
+    neg_urls = %w(approv avis budget collis eat enterprise facebook financ food google gourmet hertz hotel hyatt insur invest loan lube mobility motel motorola parts quick rent repair restaur rv ryder service softwar travel twitter webhost yellowpages yelp youtube)
 
     pos_urls = ["acura", "alfa romeo", "aston martin", "audi", "bmw", "bentley", "bugatti", "buick", "cdjr", "cadillac", "chevrolet", "chrysler", "dodge", "ferrari", "fiat", "ford", "gmc", "group", "group", "honda", "hummer", "hyundai", "infiniti", "isuzu", "jaguar", "jeep", "kia", "lamborghini", "lexus", "lincoln", "lotus", "mini", "maserati", "mazda", "mclaren", "mercedes-benz", "mitsubishi", "nissan", "porsche", "ram", "rolls-royce", "saab", "scion", "smart", "subaru", "suzuki", "toyota", "volkswagen", "volvo"]
 
@@ -33,7 +34,7 @@ class StartCrm
 
     # neg_hrefs = %w(? .com .jpg @ * afri after anounc apply approved blog book business buy call care career cash charit cheap check click collis commerc cont contrib deal distrib download employ event face feature feed financ find fleet form gas generat golf here holiday hospi hour info insta inventory join later light login mail mobile movie museu music news none now oil part pay phone policy priva pump quick quote rate regist review saving schedul service shop sign site speci ticket tire today transla travel truck tv twitter watch youth)
 
-    neg_exts = %w(au ca edu es gov in ru uk us)
+    neg_exts = %w(au ca edu es gov in ru uk us business site)
 
     oa_args = {neg_urls: neg_urls, pos_urls: pos_urls, neg_exts: neg_exts}
 
@@ -51,11 +52,11 @@ class StartCrm
 
 
   def self.get_urls
-    # urls = Web.where(url_sts: 'Invalid').pluck(:url)
-    # urls2 = urls.sort { |x,y| x.length <=> y.length }
-    # urls2[600..630]
+    # urls1 = Web.where(url_sts: 'Invalid').where.not("url LIKE '%.site%'").pluck(:url)
+    # urls = urls1.sort { |x,y| y.length <=> x.length }
+    # urls[0..50]
 
-    ["http://nissan-of-new-rochelle.business.site", "http://www.automobileconsultingservices.com", "http://boutique-auto-sales-inc.business.site", "http://www.toyotaofberkeleyservicecenter.com", "https://www.premiervolvocarsoverlandpark.com", "https://www.hertzcarsalesphoenixbellroad.com", "http://central-autohaus-dallas.business.site", "http://jim-taylor-ford-lincoln.business.site", "http://quirk-cars-by-us-bangor.business.site", "http://vertucci-automotive-inc.business.site", "https://www.allstarvolvocarsofbatonrouge.com", "https://www.chryslerjeepdodgeramofrenton.com", "https://www.hertzcarsalescoloradosprings.com", "http://two-way-used-cars-trucks.business.site", "http://www.greatlakeschryslerdodgejeepram.com", "http://york-chevrolet-buick-gmc.business.site", "https://www.motorvillagechryslerdodgejeep.com", "http://americas-best-auto-deals.business.site", "http://stone-mountain-volkswagen.business.site", "http://dale-warnick-chevrolet-inc.business.site", "http://www.colliervillechryslerdodgejeepram.com", "http://uncle-joes-cars-and-trucks.business.site", "http://grand-west-tractor-truck-rv.business.site", "http://www.performancechryslerjeepcenterville.com", "http://raysfordchryslerdodgejeepram.business.site", "http://tegeler-used-cars-of-industry.business.site", "https://www.performancechryslerjeepcenterville.com", "http://laredo-dodge-chrysler-jeep-ram.business.site", "http://big-mike-at-ciocca-dealerships.business.site", "http://betten-baker-used-cars-twin-lake.business.site", "http://russell-chevrolet-pre-owned-cars.business.site"]
+    ["https://www.stevenscreekmitsubishiserviceandpartscenter.com", "https://www.performancechryslerjeepcenterville.com", "http://www.performancechryslerjeepcenterville.com", "http://www.colliervillechryslerdodgejeepram.com", "http://www.greatlakeschryslerdodgejeepram.com", "https://www.motorvillagechryslerdodgejeep.com", "https://www.allstarvolvocarsofbatonrouge.com", "https://www.premiervolvocarsoverlandpark.com", "http://www.toyotaofberkeleyservicecenter.com", "https://www.chryslerjeepdodgeramofrenton.com", "https://www.hertzcarsalescoloradosprings.com", "https://www.hertzcarsalesphoenixbellroad.com", "http://www.automobileconsultingservices.com", "https://www.alfaromeousaofcentervilleoh.com", "https://www.hertzcarsalesstonemountain.com", "http://www.precisionfleetservicestempe.com", "http://www.alsdetailingsalesandservice.com", "http://www.brentberghegerchryslerdodge.com", "http://www.seattlemotorsportsshoreline.com", "http://www.upstateautoservicebodyworks.com", "http://minnesotacarloancreditfinancing.com", "https://www.hertzcarsalesjacksonville.com", "http://www.watsonsautosalesandfinance.com", "https://www.hertzcarsaleswinstonsalem.com", "https://www.hertzcarsaleshoustonsouth.com", "http://www.autofairvolkswagenofnashua.com", "https://www.hertzcarsalespompanobeach.com", "https://www.hertzcarsalessanfrancisco.com", "http://www.countrysideautobodyservice.com", "http://www.napletonjaguarschererville.com", "https://www.hertzcarsalessaltlakecity.com", "http://futurefordtruckrvservicecenter.com", "https://www.allstarvolvoofbatonrouge.com", "http://www.dondavisdodgechryslerjeep.com", "https://www.faulknervolvocarstrevose.com", "http://www.dondavischryslerdodgejeep.com", "https://www.lithiachryslergreatfalls.com", "https://www.imageautosalesandservice.com", "http://alfaromeousaoffairviewheights.com", "https://www.fallschurchdonbeyervolvo.com", "https://www.hertzcarsalesorlandoeast.com", "https://www.hertzcarsalescrystallake.com", "https://www.hertzcarsalesalbuquerque.com", "http://www.mikehatchsalesandservice.com", "http://www.greaterbostonmotorsports.com", "http://www.watervillewhitehouseford.com", "https://www.hertzcarsalessantaclara.com", "http://www.excellentchoiceautosales.com", "https://www.hertzcarsalesclearwater.com", "http://davisautosales.motorcarsites.com", "https://www.hertzcarsalesrichardson.com"]
   end
 
 
