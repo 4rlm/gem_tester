@@ -1,136 +1,133 @@
 module CRMFormatter
   class Web
 
-    # def initialize(args={})
-    #   @url_oa = args.fetch(:url_oa, [])
-    #   @link_oa = args.fetch(:link_oa, [])
-    #   @href_oa = args.fetch(:href_oa, [])
-    #   @extension_oa = args.fetch(:extension_oa, [])
-    #   @length_min = args.fetch(:length_min, 2)
-    #   @length_max = args.fetch(:length_max, 100)
-    # end
-
-
     def initialize(args={})
-      @pos_urls = args.fetch(:pos_urls, ['www', 'com', 'dragon'])
-      @neg_urls = args.fetch(:neg_urls, ['http', 'grossinger', 'dragon'])
-
+      @pos_urls = args.fetch(:pos_urls, [])
+      @neg_urls = args.fetch(:neg_urls, [])
       @pos_links = args.fetch(:pos_links, [])
       @neg_links = args.fetch(:neg_links, [])
-
       @pos_hrefs = args.fetch(:pos_hrefs, [])
       @neg_hrefs = args.fetch(:neg_hrefs, [])
-
       @pos_exts = args.fetch(:pos_exts, [])
       @neg_exts = args.fetch(:neg_exts, [])
-
-      @length_min = args.fetch(:length_min, 2)
-      @length_max = args.fetch(:length_max, 100)
+      @min_length = args.fetch(:min_length, 2)
+      @max_length = args.fetch(:max_length, 100)
     end
 
     def get_banned_syms
       syms = ["!", "$", "%", "'", "(", ")", "*", "+", ",", "<", ">", "@", "[", "]", "^", "{", "}", "~"]
     end
 
-    def get_key(hash, pos_neg)
-      keys = hash.map { |k,v| k.to_s if !v.present? }.compact
-      pos_key = keys.select { |k| k if k.include?(pos_neg) }.compact.join('')
-    end
-
-    def match_pn_list(target, pn_key)
+    ##Call: StartCrm.run_webs
+    def compare_criteria(hash, target, pn_key, include_or_equal)
       if pn_key.present?
         pn_list = instance_variable_get("@#{pn_key}")
-        pn_list += get_banned_syms if pn_key.include?('neg')
-        pn_match = pn_list.select { |el| el if target.include?(el) }.join(', ')
-        binding.pry if pn_key.include?('neg')
-        return pn_match
+        pn_list += get_banned_syms if %w(neg_urls neg_links neg_hrefs).include?(pn_key)
+
+        if pn_list.present?
+          if target.is_a?(::String)
+            tars = target.split(', ')
+          else
+            tars = target
+          end
+
+          pn_matches = tars.map do |tar|
+            if pn_list.present?
+              if include_or_equal == 'include'
+                pn_list.select { |el| el if target.include?(el) }.join(', ')
+              elsif include_or_equal == 'equal'
+                pn_list.select { |el| el if target == el }.join(', ')
+              end
+            end
+          end
+
+          pn_match = pn_matches&.uniq&.sort&.join(', ')
+          if pn_match.present?
+            if pn_key.include?('neg')
+              hash[:neg] << "#{pn_key}: #{pn_match}"
+            else
+              hash[:pos] << "#{pn_key}: #{pn_match}"
+            end
+          end
+        end
+
+        hash
       end
-    end
-
-
-    def update_hash_pn(hash, target, pn_key)
-      pn_match = match_pn_list(target, pn_key) if pn_key.present?
-      hash[pn_key.to_sym] = pn_match
-      return hash
     end
 
 
     ##Call: StartCrm.run_webs
-    def check_pos_neg(hash, target)
-      # target = "http://www.grossinger.com/"
-      # url = target
-      # hash = {url_path: "http://www.grossinger.com/", formatted_url: nil, url_edit: false, pos_urls: nil, neg_urls: nil }
-
-      pos_key = get_key(hash, 'pos')
-      hash = update_hash_pn(hash, target, pos_key) if pos_key.present?
-
-      neg_key = get_key(hash, 'neg')
-      hash = update_hash_pn(hash, target, neg_key) if neg_key.present?
-      binding.pry
-
-      return hash
+    def format_url(url)
+      prepared_result = prepare_for_uri(url)
+      url_hash = prepared_result[:url_hash]
+      url_hash = format_with_uri(url_hash, prepared_result[:url])
+      url_hash
     end
 
 
-    def format_url(url)
-      url_hsh = {url_path: url, formatted_url: nil, url_edit: false, neg_urls: nil, pos_urls: nil }
-      if url.present?
-        begin
-          url = url&.split('|')&.first
-          url = url&.split('\\')&.first
-          url&.gsub!(/\P{ASCII}/, '')
-          url = url&.downcase&.strip
-          return url_hsh if url&.length < @length_min
+    ##Call: StartCrm.run_webs
+    def prepare_for_uri(url)
+      url_hash = {url_path: url, formatted_url: nil, url_diff: false, neg: [], pos: [] }
+      begin
+        url = url&.split('|')&.first
+        url = url&.split('\\')&.first
+        url&.gsub!(/\P{ASCII}/, '')
+        url = url&.downcase&.strip
 
-          2.times { remove_ww3(url) } if url.present?
-          url = remove_slashes(url) if url.present?
-          url&.strip!
-
-          return url_hsh if !url.present? || url&.include?(' ')
-          url = url[0..-2] if url[-1] == '/'
-
-          binding.pry
-          url_hsh = check_pos_neg(url_hsh, url)
-          binding.pry
-
-          return url_hsh if get_banned_syms.any? {|symb| url&.include?(symb) }
-
-          uri = URI(url)
-          if uri.present?
-            host_parts = uri.host&.split(".")
-
-            if @neg_exts.any?
-              bad_host_sts = host_parts&.map { |part| TRUE if @neg_exts.any? {|ext| part == ext } }&.compact&.first
-              return url_hsh if bad_host_sts
-            end
-
-            host = uri.host
-            scheme = uri.scheme
-            url = "#{scheme}://#{host}" if host.present? && scheme.present?
-            url = "http://#{url}" if url[0..3] != "http"
-            url = url.gsub("//", "//www.") if !url.include?("www.")
-
-            return url_hsh if @neg_urls.any? { |bad_text| url&.include?(bad_text) }
-
-            url_hsh[:formatted_url] = convert_to_scheme_host(url) if url.present?
-            url_hsh[:url_edit] = url_hsh[:formatted_url] != url_hsh[:url_path]
-          end
-        rescue
-          return url_hsh
+        if url.length < @min_length
+          url_hash[:neg] << "error: url_path < #{@min_length}"
         end
+
+        2.times { remove_ww3(url) }
+        url = remove_slashes(url)
+        url&.strip!
+        url = nil if url&.include?(' ')
+        url = url[0..-2] if url[-1] == '/'
+
+        url_hash = compare_criteria(url_hash, url, 'neg_urls', 'include') if url.present?
+        url_hash = compare_criteria(url_hash, url, 'pos_urls', 'include') if url.present?
+      rescue Exception => e
+        url_hash[:neg] << "error: #{e}"
+        binding.pry
       end
-      url_hsh
+      prepared_result = { url_hash: url_hash, url: url }
+    end
+
+
+    ##Call: StartCrm.run_webs
+    def format_with_uri(url_hash, url)
+      begin
+        uri = URI(url)
+        host_parts = uri.host&.split(".")
+        url_hash = compare_criteria(url_hash, host_parts, 'pos_exts', 'equal')
+        url_hash = compare_criteria(url_hash, host_parts, 'neg_exts', 'equal')
+
+        host = uri.host
+        scheme = uri.scheme
+        url = "#{scheme}://#{host}" if host.present? && scheme.present?
+        url = "http://#{url}" if url[0..3] != "http"
+        url = url.gsub("//", "//www.") if !url.include?("www.")
+
+        url_hash[:formatted_url] = convert_to_scheme_host(url) if url.present?
+        url_hash[:url_diff] = url_hash[:formatted_url] != url_hash[:url_path]
+      rescue Exception => e
+        url_hash[:error] = e
+        binding.pry
+        url_hash
+      end
+
+      url_hash
     end
 
 
     ###### Supporting Methods Below #######
 
     def extract_link(url_path)
-      url_hsh = format_url(url_path)
-      url = url_hsh[:formatted_url]
+      url_hash = format_url(url_path)
+      url = url_hash[:formatted_url]
       link = url_path
       link_hsh = {url_path: url_path, url: url, link: nil }
-      if url.present? && link.present? && link.length > @length_min
+      if url.present? && link.present? && link.length > @min_length
         url = strip_down_url(url)
         link = strip_down_url(link)
         link&.gsub!(url, '')
@@ -138,7 +135,7 @@ module CRMFormatter
         link = link&.split('.com')&.last
         link = link&.split('.org')&.last
         link = "/#{link.split("/").reject(&:empty?).join("/")}" if link.present?
-        link_hsh[:link] = link if link.present? && link.length > @length_min
+        link_hsh[:link] = link if link.present? && link.length > @min_length
       end
       link_hsh
     end
@@ -160,8 +157,8 @@ module CRMFormatter
       if link.present?
         @neg_links += get_symbs
         flags = @neg_links.select { |red| link&.include?(red) }
-        flags << "below #{@length_min}" if link.length < @length_min
-        flags << "over #{@length_max}" if link.length > @length_max
+        flags << "below #{@min_length}" if link.length < @min_length
+        flags << "over #{@max_length}" if link.length > @max_length
         flags = flags.flatten.compact
         flags.any? ? valid_link = nil : valid_link = link
         link_hsh[:valid_link] = valid_link
@@ -185,7 +182,7 @@ module CRMFormatter
         href&.gsub!("'", ' ')
 
         flags = []
-        flags << "over #{@length_max}" if href.length > @length_max
+        flags << "over #{@max_length}" if href.length > @max_length
         invalid_text = Regexp.new(/[0-9]/)
         flags << invalid_text&.match(href)
         href = href&.downcase
