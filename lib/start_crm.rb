@@ -8,6 +8,7 @@ class StartCrm
     formatted_url_hashes = get_urls.map do |url|
       url_hash = web.format_url(url)
     end
+    binding.pry
 
     formatted_url_hashes
   end
@@ -40,8 +41,10 @@ class StartCrm
     oa_args = {neg_urls: neg_urls, pos_urls: pos_urls, neg_exts: neg_exts}
   end
 
+  ##Rails C: StartCrm.run_webs
   def self.get_urls
-    urls = ["https://www.stevenscreekmitsubishiserviceandpartscenter.com"]
+    urls = %w(approvedautosales.org autosmartfinance.com leessummitautorepair.net melodytoyota.com northeastacura.com gemmazda.com)
+    # urls = %w(website.com website.business.site website website.fake website.fake.com website.com.fake)
   end
 
   # urls1 = Web.where(url_sts: 'Invalid').where.not("url LIKE '%.site%'").pluck(:url)

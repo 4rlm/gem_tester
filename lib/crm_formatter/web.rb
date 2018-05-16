@@ -32,9 +32,10 @@ module CRMFormatter
       url = nil if has_errors(url_hash)
 
       if url.present?
-        uri_result = run_uri(url_hash, url)
-        url_hash = uri_result[:url_hash]
-        url = uri_result[:url]
+        url = normalize_url(url)
+        ext_result = validate_extension(url_hash, url)
+        url_hash = ext_result[:url_hash]
+        url = ext_result[:url]
         (url = nil if has_errors(url_hash)) if url.present?
       end
 
@@ -78,11 +79,7 @@ module CRMFormatter
         end
 
         url = nil if url.present? && banned_symbols.any? {|symb| url&.include?(symb) }
-
-        if url.present?
-          url_hash = scrub_oa(url_hash, url, 'pos_urls', 'include') if !@empty_oa
-          url_hash = scrub_oa(url_hash, url, 'neg_urls', 'include') if !@empty_oa
-        else
+        if !url.present?
           url_hash[:neg] << "error: syntax"
           url_hash[:formatted_url] = url
         end
@@ -97,104 +94,63 @@ module CRMFormatter
     end
 
 
-    ##Call: StartCrm.run_webs
-    def run_uri(url_hash, url)
-      begin
+    def normalize_url(url)
+      if url.present?
         uri = URI(url)
-        host_parts = uri.host&.split(".")
-        url_hash = scrub_oa(url_hash, host_parts, 'pos_exts', 'equal') if !@empty_oa
-        url_hash = scrub_oa(url_hash, host_parts, 'neg_exts', 'equal') if !@empty_oa
-
-        host = uri.host
-        scheme = uri.scheme
+        scheme = uri&.scheme
+        host = uri&.host
         url = "#{scheme}://#{host}" if host.present? && scheme.present?
         url = "http://#{url}" if url[0..3] != "http"
         url = url.gsub("//", "//www.") if !url.include?("www.")
-        samp_url = convert_to_scheme_host(url)
-
-        url = convert_to_scheme_host(url) if url.present?
-        url_extens_result = check_url_extens(url_hash, url)
-        url_hash = url_extens_result[:url_hash]
-        url = url_extens_result[:url]
-
-      rescue Exception => e
-        url_hash[:neg] << "error: #{e}"
-        url = nil
-        url_hash
       end
-
-      uri_result = { url_hash: url_hash, url: url }
     end
 
 
     #Source: http://www.iana.org/domains/root/db
     #Text: http://data.iana.org/TLD/tlds-alpha-by-domain.txt
-    def check_url_extens(url_hash, url)
+    def validate_extension(url_hash, url)
       if url.present?
-        url_extens = URI(url).host&.split(".")[2..-1]
-        if url_extens.count > 1
-          file_path = "./lib/crm_formatter/extensions.csv"
-          extens_list = CSV.read(file_path).flatten
-          valid_url_extens = extens_list & url_extens
+        uri_parts = URI(url).host&.split(".")
+        url_exts = uri_parts[2..-1]
 
-          if valid_url_extens.count != 1
-            extens_str = valid_url_extens.map { |ext| ".#{ext}" }.join(', ')
-            url_hash[:neg] << "error: exts.count > 1 [#{extens_str}]"
-            url = nil
+        if url_exts.empty?   ## Missing ext.
+          err_msg = "error: ext.none"
+        else   ## Has ext(s), but need to verify validity and count.
+          file_path = "./lib/crm_formatter/extensions.csv"
+          iana_list = CSV.read(file_path).flatten
+          matched_exts = iana_list & url_exts
+
+          if matched_exts.empty? ## Has ext, but not valid.
+            err_msg = "error: ext.invalid [#{url_exts.join(', ')}]"
+          elsif matched_exts.count > 1  ## Has too many valid exts, Limit 1.
+            err_msg = "error: ext.valid > 1 [#{matched_exts.join(', ')}]"
+          else   ## Perfect: Has just one valid ext.
+            ## Has one valid ext, but need to check if original url exts were > 1.  Replace if so.
+            if url_exts.count > matched_exts.count
+              inv_ext = (url_exts - matched_exts).join
+              url = url.gsub(".#{inv_ext}", '')
+            end
+
+            # Regardless of scrub results, still continue because technically valid ext.
+            if !@empty_oa
+              url_hash = scrub_oa(url_hash, matched_exts, 'pos_exts', 'equal')
+              url_hash = scrub_oa(url_hash, matched_exts, 'neg_exts', 'equal')
+              url_hash = scrub_oa(url_hash, url, 'pos_urls', 'include')
+              url_hash = scrub_oa(url_hash, url, 'neg_urls', 'include')
+            end
           end
+        end
+
+        if err_msg
+          url_hash[:neg] << err_msg
+          url = nil
+          url_hash[:formatted_url] = nil
         end
       end
 
-      url_hash[:formatted_url] = url
-      url_extens_result = {url_hash: url_hash, url: url}
+      ext_result = {url_hash: url_hash, url: url}
     end
 
-    # Below method has been moved to Helper and accessible via:
-    # hash = CRMFormatter::Helper.scrub_oa(hash, target, oa_name, include_or_equal)
-    # OR
-    # @helper = CRMFormatter::Helper
-    # hash = @helper.scrub_oa(hash, target, oa_name, include_or_equal)
-    # ## This process, scrub_oa only runs if client OA args were passed at initialization.
-    # ## Results listed in url_hash[:neg]/[:pos], and don't impact or hinder final formatted url.
-    # ## Simply adds more details about user's preferences and criteria for the url are.
-    #
-    # def scrub_oa(hash, target, oa_name, include_or_equal)
-    #   unless @empty_oa
-    #     if oa_name.present?
-    #       criteria = instance_variable_get("@#{oa_name}")
-    #
-    #       if criteria.present?
-    #         if target.is_a?(::String)
-    #           tars = target.split(', ')
-    #         else
-    #           tars = target
-    #         end
-    #
-    #         scrub_matches = tars.map do |tar|
-    #           if criteria.present?
-    #             if include_or_equal == 'include'
-    #               criteria.select { |crit| crit if tar.include?(crit) }.join(', ')
-    #             elsif include_or_equal == 'equal'
-    #               criteria.select { |crit| crit if tar == crit }.join(', ')
-    #             end
-    #           end
-    #         end
-    #
-    #         scrub_match = scrub_matches&.uniq&.sort&.join(', ')
-    #         if scrub_match.present?
-    #           if oa_name.include?('neg')
-    #             hash[:neg] << "#{oa_name}: #{scrub_match}"
-    #           else
-    #             hash[:pos] << "#{oa_name}: #{scrub_match}"
-    #           end
-    #         end
-    #       end
-    #
-    #     end
-    #   end
-    #
-    #   hash
-    # end
 
     ###### Supporting Methods Below #######
 
@@ -273,17 +229,6 @@ module CRMFormatter
     end
 
 
-    def convert_to_scheme_host(url)
-      if url.present?
-        uri = URI(url)
-        scheme = uri&.scheme
-        host = uri&.host
-        url = "#{scheme}://#{host}" if (scheme.present? && host.present?)
-        return url
-      end
-    end
-
-
     #CALL: Formatter.new.remove_ww3(url)
     def remove_ww3(url)
       if url.present?
@@ -301,15 +246,6 @@ module CRMFormatter
       end
       return url
     end
-
-    ##Call: StartCrm.run_webs
-    # def get_ext_list
-    #   # Source: http://www.iana.org/domains/root/db
-    #   # .txt list: http://data.iana.org/TLD/tlds-alpha-by-domain.txt
-    #   file_path = "./lib/crm_formatter/extensions.csv"
-    #   extensions = CSV.read(file_path)
-    # end
-
 
   end
 end
