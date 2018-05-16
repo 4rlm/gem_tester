@@ -1,26 +1,15 @@
 class StartCrm
 
-  # # #Call: StartCrm.run_webs
-  # def self.run_webs
-  #   web = CRMFormatter::Web.new
-  #   # hsh = web.format_url('http://www.bobilya.com/adam_testing')
-  #   hsh = web.check_pos_neg('target', 'hash')
-  #   binding.pry
-  # end
-
-
-  # #Call: StartCrm.run_webs
+  ##Rails C: StartCrm.run_webs
   def self.run_webs
     oa_args = get_args
     web = CRMFormatter::Web.new(oa_args)
-    # web = CRMFormatter::Web.new
-    urls = get_urls
 
-    formatted_url_hashes = urls.map do |url|
+    formatted_url_hashes = get_urls.map do |url|
       url_hash = web.format_url(url)
     end
 
-    binding.pry
+    formatted_url_hashes
   end
 
 
@@ -34,9 +23,7 @@ class StartCrm
 
     # neg_hrefs = %w(? .com .jpg @ * afri after anounc apply approved blog book business buy call care career cash charit cheap check click collis commerc cont contrib deal distrib download employ event face feature feed financ find fleet form gas generat golf here holiday hospi hour info insta inventory join later light login mail mobile movie museu music news none now oil part pay phone policy priva pump quick quote rate regist review saving schedul service shop sign site speci ticket tire today transla travel truck tv twitter watch youth)
 
-    neg_exts = %w(au ca edu es gov in ru uk us business site)
 
-    oa_args = {neg_urls: neg_urls, pos_urls: pos_urls, neg_exts: neg_exts}
 
     # pos_urls
     # neg_urls
@@ -48,18 +35,18 @@ class StartCrm
     # neg_exts
     # min_length
     # max_length
-  end
 
+    neg_exts = %w(au ca edu es gov in ru uk us)
+    oa_args = {neg_urls: neg_urls, pos_urls: pos_urls, neg_exts: neg_exts}
+  end
 
   def self.get_urls
-    # urls1 = Web.where(url_sts: 'Invalid').where.not("url LIKE '%.site%'").pluck(:url)
-    # urls = urls1.sort { |x,y| y.length <=> x.length }
-    # urls[0..50]
-
-    ["https://www.stevenscreekmitsubishiserviceandpartscenter.com", "https://www.performancechryslerjeepcenterville.com", "http://www.performancechryslerjeepcenterville.com", "http://www.colliervillechryslerdodgejeepram.com", "http://www.greatlakeschryslerdodgejeepram.com", "https://www.motorvillagechryslerdodgejeep.com", "https://www.allstarvolvocarsofbatonrouge.com", "https://www.premiervolvocarsoverlandpark.com", "http://www.toyotaofberkeleyservicecenter.com", "https://www.chryslerjeepdodgeramofrenton.com", "https://www.hertzcarsalescoloradosprings.com", "https://www.hertzcarsalesphoenixbellroad.com", "http://www.automobileconsultingservices.com", "https://www.alfaromeousaofcentervilleoh.com", "https://www.hertzcarsalesstonemountain.com", "http://www.precisionfleetservicestempe.com", "http://www.alsdetailingsalesandservice.com", "http://www.brentberghegerchryslerdodge.com", "http://www.seattlemotorsportsshoreline.com", "http://www.upstateautoservicebodyworks.com", "http://minnesotacarloancreditfinancing.com", "https://www.hertzcarsalesjacksonville.com", "http://www.watsonsautosalesandfinance.com", "https://www.hertzcarsaleswinstonsalem.com", "https://www.hertzcarsaleshoustonsouth.com", "http://www.autofairvolkswagenofnashua.com", "https://www.hertzcarsalespompanobeach.com", "https://www.hertzcarsalessanfrancisco.com", "http://www.countrysideautobodyservice.com", "http://www.napletonjaguarschererville.com", "https://www.hertzcarsalessaltlakecity.com", "http://futurefordtruckrvservicecenter.com", "https://www.allstarvolvoofbatonrouge.com", "http://www.dondavisdodgechryslerjeep.com", "https://www.faulknervolvocarstrevose.com", "http://www.dondavischryslerdodgejeep.com", "https://www.lithiachryslergreatfalls.com", "https://www.imageautosalesandservice.com", "http://alfaromeousaoffairviewheights.com", "https://www.fallschurchdonbeyervolvo.com", "https://www.hertzcarsalesorlandoeast.com", "https://www.hertzcarsalescrystallake.com", "https://www.hertzcarsalesalbuquerque.com", "http://www.mikehatchsalesandservice.com", "http://www.greaterbostonmotorsports.com", "http://www.watervillewhitehouseford.com", "https://www.hertzcarsalessantaclara.com", "http://www.excellentchoiceautosales.com", "https://www.hertzcarsalesclearwater.com", "http://davisautosales.motorcarsites.com", "https://www.hertzcarsalesrichardson.com"]
+    urls = ["https://www.stevenscreekmitsubishiserviceandpartscenter.com"]
   end
 
-
+  # urls1 = Web.where(url_sts: 'Invalid').where.not("url LIKE '%.site%'").pluck(:url)
+  # urls = urls1.sort { |x,y| y.length <=> x.length }
+  # urls[0..50]
 
 
 

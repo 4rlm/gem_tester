@@ -71,4 +71,4 @@ gem 'curb', '~> 0.9.3'
 # gem "crm_formatter", path: "../crm_formatter"
 # gem 'crm_formatter', '~> 1.0.3.pre.rc.1'
 # gem 'crm_formatter'
-gem "crm_formatter", path: "/Users/Adam/Desktop/gems/crm_formatter"
+# gem "crm_formatter", path: "/Users/Adam/Desktop/gems/crm_formatter"
