@@ -1,9 +1,9 @@
 require 'csv'
-# require 'helpers'
+# require 'helper'
 
 module CRMFormatter
   class Web
-    include Helpers
+    include Helper
 
     def initialize(args={})
       @empty_oa = args.empty?
@@ -18,7 +18,7 @@ module CRMFormatter
       @min_length = args.fetch(:min_length, 2)
       @max_length = args.fetch(:max_length, 100)
     end
-    # hash = @helpers.scrub_oa(hash, target, oa_name, include_or_equal)
+    # hash = @helper.scrub_oa(hash, target, oa_name, include_or_equal)
 
     def banned_symbols
       banned_symbols = ["!", "$", "%", "'", "(", ")", "*", "+", ",", "<", ">", "@", "[", "]", "^", "{", "}", "~"]
@@ -104,7 +104,7 @@ module CRMFormatter
         host_parts = uri.host&.split(".")
         url_hash = scrub_oa(url_hash, host_parts, 'pos_exts', 'equal') if !@empty_oa
         url_hash = scrub_oa(url_hash, host_parts, 'neg_exts', 'equal') if !@empty_oa
-        
+
         host = uri.host
         scheme = uri.scheme
         url = "#{scheme}://#{host}" if host.present? && scheme.present?
@@ -149,11 +149,11 @@ module CRMFormatter
       url_extens_result = {url_hash: url_hash, url: url}
     end
 
-    # Below method has been moved to Helpers and accessible via:
-    # hash = CRMFormatter::Helpers.scrub_oa(hash, target, oa_name, include_or_equal)
+    # Below method has been moved to Helper and accessible via:
+    # hash = CRMFormatter::Helper.scrub_oa(hash, target, oa_name, include_or_equal)
     # OR
-    # @helpers = CRMFormatter::Helpers
-    # hash = @helpers.scrub_oa(hash, target, oa_name, include_or_equal)
+    # @helper = CRMFormatter::Helper
+    # hash = @helper.scrub_oa(hash, target, oa_name, include_or_equal)
     # ## This process, scrub_oa only runs if client OA args were passed at initialization.
     # ## Results listed in url_hash[:neg]/[:pos], and don't impact or hinder final formatted url.
     # ## Simply adds more details about user's preferences and criteria for the url are.
