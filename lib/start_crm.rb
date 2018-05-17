@@ -4,14 +4,16 @@ class StartCrm
   def self.run_webs
     oa_args = get_args
     web = CRMFormatter::Web.new(oa_args)
-
+    # web = CRMFormatter::Web.new
     formatted_url_hashes = get_urls.map do |url|
       url_hash = web.format_url(url)
     end
     binding.pry
-
     formatted_url_hashes
   end
+
+  # web = CRMFormatter::Web.new
+  # web.format_url('approvedautosales.org')
 
 
 
@@ -24,19 +26,6 @@ class StartCrm
 
     # neg_hrefs = %w(? .com .jpg @ * afri after anounc apply approved blog book business buy call care career cash charit cheap check click collis commerc cont contrib deal distrib download employ event face feature feed financ find fleet form gas generat golf here holiday hospi hour info insta inventory join later light login mail mobile movie museu music news none now oil part pay phone policy priva pump quick quote rate regist review saving schedul service shop sign site speci ticket tire today transla travel truck tv twitter watch youth)
 
-
-
-    # pos_urls
-    # neg_urls
-    # pos_links
-    # neg_links
-    # pos_hrefs
-    # neg_hrefs
-    # pos_exts
-    # neg_exts
-    # min_length
-    # max_length
-
     neg_exts = %w(au ca edu es gov in ru uk us)
     oa_args = {neg_urls: neg_urls, pos_urls: pos_urls, neg_exts: neg_exts}
   end
@@ -44,8 +33,10 @@ class StartCrm
   ##Rails C: StartCrm.run_webs
   def self.get_urls
     urls = %w(approvedautosales.org autosmartfinance.com leessummitautorepair.net melodytoyota.com northeastacura.com gemmazda.com)
-    # urls = %w(website.com website.business.site website website.fake website.fake.com website.com.fake)
+    urls += %w(website.com website.business.site website website.fake website.fake.com website.com.fake)
   end
+
+
 
   # urls1 = Web.where(url_sts: 'Invalid').where.not("url LIKE '%.site%'").pluck(:url)
   # urls = urls1.sort { |x,y| y.length <=> x.length }
