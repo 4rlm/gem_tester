@@ -67,6 +67,10 @@ gem 'faker'
 gem 'net-ping', '~> 1.7', '>= 1.7.8'
 gem 'curb', '~> 0.9.3'
 
+gem 'utf8_sanitizer', '~> 2.16'
+gem 'crm_formatter', '~> 2.62'
+gem 'scrub_db', '~> 2.22'
+gem 'url_verifier', '~> 2.10'
 
 # gem "crm_formatter", path: "../crm_formatter"
 # gem 'crm_formatter', '~> 1.0.3.pre.rc.1'
