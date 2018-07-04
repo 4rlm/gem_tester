@@ -67,12 +67,32 @@ gem 'faker'
 gem 'net-ping', '~> 1.7', '>= 1.7.8'
 gem 'curb', '~> 0.9.3'
 
-gem 'utf8_sanitizer', '~> 2.16'
-gem 'crm_formatter', '~> 2.62'
-gem 'scrub_db', '~> 2.22'
-gem 'url_verifier', '~> 2.12'
-gem 'mechanizer', '~> 1.10'
+# gem 'crm_formatter'
+gem 'crm_formatter', '~> 2.64'
+gem 'utf8_sanitizer'
+gem 'scrub_db', '~> 2.23'
+# gem 'scrub_db'
+gem 'url_verifier'
+gem 'mechanizer'
+gem 'link_scraper'
 gem 'email_verifier'
+
+
+# gem 'utf8_sanitizer', '~> 2.16'
+# gem 'scrub_db', '~> 2.22'
+# gem 'url_verifier', '~> 2.12'
+# gem 'mechanizer', '~> 1.11'
+# gem 'link_scraper', '~> 1.1'
+# gem 'email_verifier'
+
+# gem uninstall mechanizer
+# gem uninstall url_verifier
+# gem uninstall scrub_db
+# gem uninstall crm_formatter
+# gem uninstall utf8_sanitizer
+# bundle install
+
+
 
 # gem "crm_formatter", path: "../crm_formatter"
 # gem 'crm_formatter', '~> 1.0.3.pre.rc.1'
